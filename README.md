@@ -12,8 +12,8 @@ L2-normalized output), evaluated on the LFW (Labeled Faces in the Wild) dataset.
 | `facenet_arch.py` | Network architecture definition |
 | `facenet_utils.py` | Weight loading (CSV → Keras) and image-encoding helpers |
 | `weights/` | Pretrained CSV weight export (226 files, required) |
-| `archive/` | LFW dataset — `lfw-deepfunneled/` images plus `pairs.csv` and related metadata (required) |
-| `images/` | A handful of original assignment portraits (gitignored — see **Known caveat** below) |
+| `archive/` | LFW dataset, `lfw-deepfunneled/` images plus `pairs.csv` and related metadata (required) |
+| `images/` | A handful of original assignment portraits (gitignored, not used by the notebook) |
 | `old/` | Earlier, superseded version of the notebook/utils (gitignored) |
 
 ## Requirements
@@ -54,13 +54,11 @@ automatically:
    ```bash
    jupyter notebook face_recognition_pipeline.ipynb
    ```
-3. Run all cells top to bottom. Runtime is a few minutes on CPU — the accuracy
+3. Run all cells top to bottom. Runtime is a few minutes on CPU, the accuracy
    section (7) encodes over a thousand LFW images.
 
-## Known caveat
+## Notes
 
-One cell in section 3 (`encode_image("images/younes.jpg", ...)`, a quick sanity check
-right after loading the pretrained weights) still depends on the `images/` folder,
-which is gitignored. On a fresh clone without that folder, every other cell in the
-notebook will run fine — only that one sanity-check cell will fail. It can be safely
-skipped, or pointed at any photo in `archive/` instead.
+The notebook depends only on `weights/` and `archive/`. The `images/` folder holds
+leftover portraits from the original course assignment and is no longer referenced by
+any cell, so a fresh clone without it runs end to end without errors.
