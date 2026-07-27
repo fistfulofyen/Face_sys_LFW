@@ -71,14 +71,3 @@ here under their own terms and remain the property of their respective owners.
     photographs remain subject to the copyright of their original creators.
     This dataset is NOT covered by the MIT license above and is not owned by
     this project. Consult the LFW website above for the current terms of use.
-
---------------------------------------------------------------------------------
-4. Course assignment scaffolding
---------------------------------------------------------------------------------
-    Early versions of the weight-loading and image-encoding helpers were
-    adapted from the starter code for the "Face Recognition" programming
-    assignment in the DeepLearning.AI Convolutional Neural Networks course
-    (Course 4, Week 4), which itself credits the Keras-OpenFace project above.
-    The current implementation is a rewrite, but the layer-name manifest and
-    weight-tensor shape tables necessarily match the originals, since they
-    index the pretrained weight files.
