@@ -1,0 +1,79 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "Face_sys_LFW: Face Verification and Identification on LFW"
+abstract: >-
+  A face verification and identification pipeline built on a pretrained OpenFace
+  nn4.small2 embedding network, evaluated on the Labeled Faces in the Wild (LFW)
+  dataset. The project measures verification (1-to-1) and rank-1 identification
+  (1-to-N) separately, and quantifies the effect of face cropping on both.
+authors:
+  - family-names: Zhang
+    given-names: Mike
+    email: zhangmike1999@gmail.com
+repository-code: "https://github.com/fistfulofyen/Face_sys_LFW"
+license: MIT
+date-released: "2026-07-27"
+keywords:
+  - face-recognition
+  - face-verification
+  - face-identification
+  - metric-learning
+  - triplet-loss
+  - deep-learning
+  - lfw
+  - openface
+references:
+  - type: conference-paper
+    title: "FaceNet: A Unified Embedding for Face Recognition and Clustering"
+    authors:
+      - family-names: Schroff
+        given-names: Florian
+      - family-names: Kalenichenko
+        given-names: Dmitry
+      - family-names: Philbin
+        given-names: James
+    year: 2015
+    collection-title: "Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)"
+    url: "https://arxiv.org/abs/1503.03832"
+  - type: report
+    title: >-
+      Labeled Faces in the Wild: A Database for Studying Face Recognition in
+      Unconstrained Environments
+    authors:
+      - family-names: Huang
+        given-names: Gary B.
+      - family-names: Ramesh
+        given-names: Manu
+      - family-names: Berg
+        given-names: Tamara
+      - family-names: Learned-Miller
+        given-names: Erik
+    year: 2007
+    institution:
+      name: "University of Massachusetts, Amherst"
+    number: "07-49"
+    url: "https://vis-www.cs.umass.edu/lfw/"
+  - type: report
+    title: "OpenFace: A general-purpose face recognition library with mobile applications"
+    authors:
+      - family-names: Amos
+        given-names: Brandon
+      - family-names: Ludwiczuk
+        given-names: Bartosz
+      - family-names: Satyanarayanan
+        given-names: Mahadev
+    year: 2016
+    institution:
+      name: "Carnegie Mellon University, School of Computer Science"
+    number: "CMU-CS-16-118"
+    notes: "Source of the pretrained nn4.small2.v1 weights used in this project."
+    url: "https://github.com/cmusatyalab/openface"
+  - type: software
+    title: "Keras-OpenFace"
+    authors:
+      - name: "Victor Sy Wang"
+    notes: >-
+      Produced the CSV export of the OpenFace nn4.small2.v1 weights that this
+      project loads from weights/.
+    url: "https://github.com/iwantooxxoox/Keras-OpenFace"

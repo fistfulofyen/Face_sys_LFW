@@ -1,0 +1,84 @@
+MIT License
+
+Copyright (c) 2026 Mike Zhang
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+================================================================================
+THIRD-PARTY COMPONENTS
+================================================================================
+
+The MIT license above covers the source code in this repository
+(`facenet_arch.py`, `facenet_utils.py`, `face_recognition_pipeline.ipynb`).
+It does NOT cover the following third-party components, which are redistributed
+here under their own terms and remain the property of their respective owners.
+
+--------------------------------------------------------------------------------
+1. Pretrained model weights  (`weights/*.csv`)
+--------------------------------------------------------------------------------
+    Source:    OpenFace, Carnegie Mellon University
+               https://github.com/cmusatyalab/openface
+    Model:     nn4.small2.v1
+    License:   Apache License 2.0
+    Trained on CASIA-WebFace and FaceScrub (~500,000 images).
+
+    The CSV export of these weights was produced by the Keras-OpenFace project:
+               https://github.com/iwantooxxoox/Keras-OpenFace
+
+--------------------------------------------------------------------------------
+2. Network architecture
+--------------------------------------------------------------------------------
+    The Inception-style architecture implemented in `facenet_arch.py` is a
+    reimplementation of the OpenFace nn4.small2 network, itself derived from
+    the architecture described in:
+
+        F. Schroff, D. Kalenichenko, and J. Philbin,
+        "FaceNet: A Unified Embedding for Face Recognition and Clustering",
+        CVPR 2015.  https://arxiv.org/abs/1503.03832
+
+    Layer naming follows the OpenFace convention because those names are the
+    lookup keys for the pretrained weight files.
+
+--------------------------------------------------------------------------------
+3. Labeled Faces in the Wild (LFW) dataset  (`archive/`)
+--------------------------------------------------------------------------------
+    Source:    University of Massachusetts, Amherst
+               https://vis-www.cs.umass.edu/lfw/
+
+        G. B. Huang, M. Ramesh, T. Berg, and E. Learned-Miller,
+        "Labeled Faces in the Wild: A Database for Studying Face Recognition
+        in Unconstrained Environments", UMass Amherst Technical Report 07-49,
+        October 2007.
+
+    The LFW images were collected from news sources, and the individual
+    photographs remain subject to the copyright of their original creators.
+    This dataset is NOT covered by the MIT license above and is not owned by
+    this project. Consult the LFW website above for the current terms of use.
+
+--------------------------------------------------------------------------------
+4. Course assignment scaffolding
+--------------------------------------------------------------------------------
+    Early versions of the weight-loading and image-encoding helpers were
+    adapted from the starter code for the "Face Recognition" programming
+    assignment in the DeepLearning.AI Convolutional Neural Networks course
+    (Course 4, Week 4), which itself credits the Keras-OpenFace project above.
+    The current implementation is a rewrite, but the layer-name manifest and
+    weight-tensor shape tables necessarily match the originals, since they
+    index the pretrained weight files.

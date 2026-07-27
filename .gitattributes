@@ -1,0 +1,30 @@
+# Normalise line endings so the repo behaves the same on Windows, macOS and Linux.
+# Files are stored with LF in the repository and checked out natively.
+* text=auto eol=lf
+
+# Explicit text types
+*.py     text eol=lf diff=python
+*.md     text eol=lf
+*.txt    text eol=lf
+*.cff    text eol=lf
+*.csv    text eol=lf
+
+# Notebooks are JSON. Keeping them as text lets git diff them, but the diffs are
+# noisy because cell outputs are embedded; review notebook changes in Jupyter or
+# with a tool such as nbdime rather than raw git diff.
+*.ipynb  text eol=lf
+
+# Binary assets, never munged or diffed
+*.jpg    binary
+*.jpeg   binary
+*.png    binary
+*.gif    binary
+*.h5     binary
+*.pb     binary
+*.onnx   binary
+*.zip    binary
+
+# GitHub language statistics: the LFW dataset and the exported weight CSVs are
+# data, not authored source, so exclude them from the language breakdown.
+archive/*  linguist-vendored
+weights/*  linguist-vendored

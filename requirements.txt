@@ -1,0 +1,20 @@
+# Face recognition pipeline, pinned to the versions this project was verified on.
+# Tested with Python 3.11.15 on Windows, CPU only (no GPU required).
+#
+#   pip install -r requirements.txt
+
+# TensorFlow bundles Keras 3.x as a dependency, so Keras is not listed separately.
+# Note: on native Windows, TensorFlow >= 2.11 has no GPU backend; everything here
+# was verified running on CPU.
+tensorflow==2.21.0
+
+numpy==2.4.4
+pillow==12.1.1
+matplotlib==3.10.8
+
+# Needed to execute face_recognition_pipeline.ipynb.
+# ipykernel is sufficient if you run the notebook from an IDE such as VS Code,
+# which is how this project was developed. Add `jupyter` as well if you want the
+# standalone `jupyter notebook` / `jupyter lab` server.
+ipykernel==7.2.0
+# jupyter
