@@ -13,8 +13,6 @@ L2-normalized output), evaluated on the LFW (Labeled Faces in the Wild) dataset.
 | `facenet_utils.py` | Weight loading (CSV → Keras) and image-encoding helpers |
 | `weights/` | Pretrained CSV weight export (226 files, required) |
 | `archive/` | LFW dataset, `lfw-deepfunneled/` images plus `pairs.csv` and related metadata (required) |
-| `images/` | A handful of original assignment portraits (gitignored, not used by the notebook) |
-| `old/` | Earlier, superseded version of the notebook/utils (gitignored) |
 
 ## Requirements
 
