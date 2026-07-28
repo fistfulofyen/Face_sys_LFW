@@ -87,8 +87,3 @@ See [`LICENSE`](LICENSE) for the full third-party attribution and terms.
 3. Run all cells top to bottom. Runtime is a few minutes on CPU, the accuracy
    section (7) encodes over a thousand LFW images.
 
-## Notes
-
-The notebook depends only on `weights/` and `archive/`. The `images/` folder holds
-leftover portraits from the original course assignment and is no longer referenced by
-any cell, so a fresh clone without it runs end to end without errors.
