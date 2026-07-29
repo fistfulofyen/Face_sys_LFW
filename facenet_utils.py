@@ -36,8 +36,13 @@ FACE_INPUT_SIZE = (96, 96)   # (height, width) expected by the network
 
 # Centre crop for LFW's 250x250 portraits, as ``(box_size, offset_y)``. The
 # positive offset shifts the box downwards, away from hair and towards the eyes/
-# nose/mouth region the weights were trained on. Measured on 1,800 LFW pairs,
-# this lifts verification accuracy from ~58% (no crop) to ~88%.
+# nose/mouth region the weights were trained on, and is worth as much as the size
+# reduction itself.
+#
+# Validated on a tuning split of LFW pairs that is disjoint from the split used to
+# report accuracy; see paper_experiments.py, Experiment 1. The 88, 92 and 96 pixel
+# windows at this offset differ by less than the fold-to-fold noise, so the size
+# choice within that family is arbitrary; the downward offset is the real effect.
 LFW_FACE_CROP = (92, 18)
 DENSE_LAYER_NAME = "dense_layer"
 # The embedding layer is the one place where the Keras layer name and the CSV
