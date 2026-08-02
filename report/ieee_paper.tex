@@ -36,14 +36,13 @@
 
 \begin{document}
 
-\title{Facial Recognition Using OpenFace Inception Network:\\
-       Verification, Closed-Set and Open-Set Identification on LFW}
+\title{Facial Recognition Using OpenFace Inception Network}
 
 % NOTE: the fifth surname was truncated in the source roster ("Yaathaven
 % Sathanan..."); complete it before submitting. Author order is the roster order,
 % not a contribution ordering -- reorder if the group agrees otherwise.
 \author{\IEEEauthorblockN{Arne Tirez, Gurtaj Singh, Jenil Bhayani,
-                          Mike Zhang, and Yaathaven Sathanan}
+                          Mike Zhang, and Yaathaven Sathananthan}
 \IEEEauthorblockA{\textit{SEP 740 -- Deep Learning}\\
 \textit{McMaster University}, Hamilton, ON, Canada}}
 
@@ -54,50 +53,34 @@
 \section{Introduction}
 %==============================================================================
 
-The phrase ``face recognition'' describes tasks that behave very differently in
-practice. \emph{Verification} is one-to-one: a subject claims an identity and the
-system confirms or denies it against one stored template. \emph{Closed-set
-identification} is one-to-N: the system decides which of $N$ enrolled people a
-photograph depicts, knowing the answer is among them. \emph{Open-set
-identification} additionally permits the answer ``nobody enrolled,'' and is the
-case that matters for access control~\cite{klare2015ijba}.
+A facial recognition model can perform several different tasks depending on the application. Verification is a one-to-one problem in which the model acts as a binary classifier, determining whether an input face matches a specific claimed identity. Closed-set identification is a one-to-N problem in which the model compares an input photo against N enrolled people in its database and identifies the correct person, assuming the individual is already enrolled. Open-set identification is similar to closed-set identification, but it also allows the model to determine that the input face does not belong to anyone in the database and classify it as an unknown or unidentifiable person.~\cite{klare2015ijba}.
 
-Published benchmark figures overwhelmingly report the first. OpenFace's
-$92.92\% \pm 1.34\%$ for the model used here, and the FaceNet paper's $99.63\%$,
-are both measured on the standard LFW list of $6{,}000$ pairs, which is a
-verification protocol; neither reports an identification metric. The same is true
-of DeepFace~\cite{taigman2014deepface} and of the LFW leaderboard generally, which
-is why MegaFace~\cite{kemelmacher2016megaface} was later constructed specifically
-to measure identification at scale.
+Many published facial recognition models were developed and evaluated for verification rather than identification. For example, OpenFace reported an accuracy of
+$92.92\% \pm 1.34\%$, and FaceNet reported an accuracy of  $99.63\%$, with both models evaluated on the standard LFW dataset, which is designed for verification tasks.
+The same is true for DeepFace~\cite{taigman2014deepface} and most models on the LFW leaderboard.
 
-We build a pipeline on the pretrained OpenFace \texttt{nn4.small2}
+We built a model on the pretrained OpenFace \texttt{nn4.small2}
 network~\cite{amos2016openface} and evaluate all three tasks on Labeled Faces in
 the Wild (LFW)~\cite{huang2007lfw} using identical embeddings. On the same
 embedding we measure $89.2\%$ verification, $58.7\%$ closed-set rank-1 on a
 $150$-identity gallery, and $14.7\%$ open-set detection and identification rate at
 $1\%$ false accept rate.
+
 Our contributions are:
 
 \begin{enumerate}
-\item A like-for-like measurement of all three tasks on one embedding, with
-      preprocessing validated on a tuning split disjoint from the split used to
-      report accuracy.
-\item An order-statistics account of the closed-set gap, checked for consistency
-      across gallery sizes from $2$ to $300$. A per-probe formulation tracks
-      measurement to within $2.8$ points up to $N=150$; the pooled formulation,
-      differing only in where the average is taken, errs by a factor of $55$. The
-      informative result is the sign and growth of its residual, which isolates
-      where the independence assumption fails.
-\item An ablation separating two preprocessing effects: on the tuning split,
-      shrinking the crop window gains $17.1$ points, and displacing a window
-      downward by $18$ pixels gains $12.7$ to $14.6$ points at fixed window size.
-\item A measured improvement predicted by the model: multi-shot enrolment raises
-      rank-1 from $52.0\%$ to $69.3\%$, and we verify the mechanism is the one the
-      model implies rather than a general contraction of the embedding space.
+\item A comparison of verification, closed-set identification, and open-set identification using the same face embedding, furthermore the preprocessing will be tuned on a separate validation dataset to ensure the reported accuracy is unbiased.
+
+\item This assignment also explains the performance gap in closed-set identification using an order-statistics model. The facial recognition model was first evaluated on a test dataset to obtain its actual identification accuracy. The per test image and pooled approaches were then used to predict that accuracy, and their predictions were compared with the measured results. The per test image approach closely matched the actual performance, whereas the pooled approach was much less accurate. The remaining differences indicated that the assumption that each face comparison was independent did not always hold in practice.
+
+\item Two preprocessing steps were tested to see how it affected performance. On the tuning dataset, using a smaller face crop improved accuracy by 17.1\%. Furthermore, moving the crop window 18 pixels downward improved the accuracy by 12.7–14.6\%  while keeping the crop size the same.
+
+\item Using multiple reference photos for each person improved the model's identification accuracy from 52.0\% to 69.3\%. It can also be confirmed that this improvement was due to the proposed method, rather than face embeddings becoming more similar.
+
 \end{enumerate}
 
-\textbf{Reproducibility.} All reported numbers and figures are produced by
-\texttt{paper\_experiments.py} in the accompanying
+All reported numbers and figures are produced by
+paper\_experiments.py in the accompanying
 repository,\footnote{\url{https://github.com/fistfulofyen/Face_sys_LFW}} which is
 seeded throughout and prints each result under the table it feeds. The one
 exception is the detector comparison of Section~\ref{sec:detector}, which requires
@@ -107,39 +90,38 @@ an external model file not redistributed with the repository.
 \section{Background}
 %==============================================================================
 
-\subsection{Metric learning}
+\subsection{Metric Learning}
 
-A softmax classifier with one output per identity must be retrained whenever
-someone is enrolled, its output layer grows with the roster, and it cannot express
-``none of the above,'' since its outputs are normalised over known classes only.
+A softmax classifier has one output for each identity. Whenever a new identity is added to the database, the model must be retrained, and thus output layer will grow. It also cannot identify someone as "unknown" because it can only choose from the identities stored.
 
 Deep metric learning instead learns an embedding
 $f:\mathcal{I}\rightarrow\mathbb{R}^{128}$ in which Euclidean distance encodes
-identity. Enrolment costs one forward pass, and open-set rejection becomes a
-threshold test.
+identity.To add a new person, the model only needs to process their reference photo once. It can also recognize when a face does not match anyone in the database by using a similarity threshold.
 
-\subsection{Triplet loss}
+\subsection{Triplet Loss}
 
-FaceNet~\cite{schroff2015facenet} trains such an embedding on triplets of an anchor
-$A$, a positive $P$ (same person) and a negative $N^-$, requiring
-$\lVert f(A)-f(P)\rVert_2^2 + \alpha \le \lVert f(A)-f(N^-)\rVert_2^2$, which
-hinged and summed over a batch gives
+FaceNet~\cite{schroff2015facenet} trains the model using three images at a time: an anchor image
+$A$, a positive image of the same person $P$,and a negative image of a different person $N^-$. The model learns to make the anchor and positive images closer together than the anchor and negative images by at least a margin $\alpha$:
+\[
+\|f(A)-f(P)\|_2^2 + \alpha \le \|f(A)-f(N^-)\|_2^2.
+\]
+
+The triplet loss used during training is:
 
 \begin{equation}
 \mathcal{L}=\sum_i \max\!\big(\lVert f(A_i)-f(P_i)\rVert_2^2
  -\lVert f(A_i)-f(N^-_i)\rVert_2^2+\alpha,\;0\big).
 \end{equation}
 
-The margin $\alpha$ is essential: without it $f(x)=c$ satisfies every constraint at
-zero loss. Since the number of candidate triplets grows cubically in the training
-set size, training mines \emph{semi-hard} negatives online, satisfying
+The margin $\alpha$ is essential because it forces the model to separate images of different people. Since the number of possible triplets grows cubically in the training set size, training uses semi-hard negatives:
+\
 $\lVert f(A)-f(P)\rVert_2^2 < \lVert f(A)-f(N^-)\rVert_2^2 <
- \lVert f(A)-f(P)\rVert_2^2+\alpha$: these violate the margin, and so produce
-gradient, without being the pathological hardest cases that destabilise training.
-Later work replaces sampled triplets with angular margins imposed directly on the
-hypersphere, as in CosFace~\cite{wang2018cosface} and ArcFace~\cite{deng2019arcface}.
+ \lVert f(A)-f(P)\rVert_2^2+\alpha$
+ \
+ 
+Later work replaces sampled triplets with angular margins such as, CosFace~\cite{wang2018cosface} and ArcFace~\cite{deng2019arcface}.
 
-\subsection{Embedding geometry and distance convention}
+\subsection{Embedding Normalization and Distance Metrics}
 
 $L^2$ normalisation places embeddings on the unit hypersphere, so distances are
 bounded to $[0,2]$ rather than $[0,1]$, and
@@ -147,121 +129,84 @@ $\lVert f(x_i)-f(x_j)\rVert_2^2 = 2-2\cos\theta_{ij}$ makes squared Euclidean
 distance and cosine similarity interchangeable for ranking.
 
 \textbf{All distances and thresholds here are unsquared $L^2$.} This matters
-because OpenFace's own default threshold of $0.99$ is on \emph{squared} $L^2$,
-equivalent to $0.995$ unsquared, numerically close to the operating point we
-obtain. The proximity is a coincidence of this dataset, not a rediscovery of their
-default; under the squared convention our threshold would be $0.984$.
+because OpenFace's own default threshold of $0.99$ is on $L^2$,
+equivalent to $0.995$ unsquared. Although this value is close to the threshold found in this study, the similarity is only due to the dataset and does not mean the same threshold was rediscovered. Using the $L^2$ distance, the threshold found in this study would be $0.984$.
 
 %==============================================================================
 \section{Method}
 %==============================================================================
 
-\subsection{Network}
+\subsection{Model}
 
-The network is an Inception-style CNN~\cite{szegedy2015going} with $3{,}733{,}968$
+The model is an Inception-style CNN~\cite{szegedy2015going} with $3{,}733{,}968$
 trainable parameters over $155$ layers, comprising $37$ convolutions, $37$
-batch-normalisation layers and $7$ depth concatenations. Keras reports a total of
-$3{,}743{,}280$; the difference of $9{,}312$ is exactly the non-trainable
-batch-normalisation moving means and variances, two per each of $4{,}656$
-normalised channels. The trainable count matches OpenFace's published figure, a
-useful check that the port is faithful.
+batch-normalization layers, and $7$ depth concatenations. Keras reports a total of $3{,}743{,}280$ parameters, with the extra $9{,}312$ parameters coming from the non-trainable moving means and variances used in the batch-normalization layers. The number of trainable parameters matches the value reported by OpenFace, confirming that the implementation is accurate.
 
 It maps a channels-first $(3,96,96)$ RGB tensor to a $128$-dimensional unit-norm
-vector. A three-block stem downsamples to $12\times12$, seven Inception stages
-reduce this to $3\times3$ while growing depth to $736$ channels, and a dense layer
-with $L^2$ normalisation produces the embedding. The $1\times1$ branches inside
-each stage act as bottlenecks that hold the parameter count at $3.7$M.
+vector. A three-block stem downsamples the image to $12\times12$. Seven Inception stages then
+reduce it further to $3\times3$ while increasing the  depth to $736$ channels. Finally a dense layer with $L^2$ normalisation produces the face embedding. The $1\times1$ branches inside
+each stage act as bottlenecks to hold the parameter count at $3.7$M.
 
-\textbf{No training is performed.} The network is a frozen feature extractor with
-weights ported from OpenFace, trained on CASIA-WebFace and FaceScrub, roughly
-$500{,}000$ images. This is about $400\times$ less data than the private corpus
-behind FaceNet, so the appropriate baseline for this reproduction is OpenFace's
-$92.92\% \pm 1.34\%$, not FaceNet's $99.63\%$.
+The network is a frozen feature extractor with pretrained OpenFace weights. These weights were orginally trained on CASIA-WebFace and FaceScrub datasets containing about, $500{,}000$ face images. This is about $400\times$ less data than the private dataset used to train FaceNet, therefore the appropriate baseline for this reproduction is OpenFace's $92.92\% \pm 1.34\%$, not FaceNet's $99.63\%$.
 
-\subsection{Weight transfer}
+\subsection{Model Weight Implementation}
 
-Parameters ship as $226$ flat CSV exports of the original Torch model, of which
-$224$ are used: two tensors for each of $37$ convolutions, four for each of $37$
+The model parameters were provided as $226$ CSV files exported from the original Torch model, of which $224$ are used: two tensors for each of $37$ convolutions, four for each of $37$
 batch-normalisation layers, and two for the dense layer. The two unused files are
-the moving mean and variance exported for \texttt{inception\_5a\_3x3\_conv2}, a
-convolution that has no batch-normalisation layer in this architecture. Restoring them requires
+the moving mean and variance exported for inception\_5a\_3x3\_conv2, a
+convolution that has no batch-normalisation layer in this architecture. To load the weights correctly requires
 transposing convolution kernels from Torch's $(\text{out},\text{in},h,w)$ layout to
-TensorFlow's $(h,w,\text{in},\text{out})$. One inherited quirk had to be preserved:
-the first stem block uses $\varepsilon=10^{-3}$, the framework default, because it
-was originally instantiated without an explicit value, while all $36$ others use
+TensorFlow's $(h,w,\text{in},\text{out})$. One important detail from the original model was also preserved:
+the first stem block uses $\varepsilon=10^{-3}$, while all $36$ others use
 $10^{-5}$. Our implementation reproduces the embeddings of the Keras-OpenFace
 reference port to $0.000\mathrm{e}{+}00$ maximum element-wise difference, with all
 $75$ weight-bearing layers matching.
 
-\subsection{Decision rules}
+\subsection{Identification and Verification Methods}
 
-The classifier is non-parametric. Verification accepts if
-$\lVert f(x)-e_{\text{claim}}\rVert_2 < \tau$. Closed-set identification returns
-$\arg\min_k \lVert f(x)-e_k\rVert_2$. Open-set identification returns that
+The classifier is non-parametric, meaning it does not need to be retrained when new people are added. For verification, a face is accepted if
+\
+$\lVert f(x)-e_{\text{claim}}\rVert_2 < \tau$
+\
+For closed-set identification, the model returns the identity with the smallest distance:
+\
+$\arg\min_k \lVert f(x)-e_k\rVert_2$
+\
+Open-set identification returns that
 argument only if the corresponding minimum falls below $\tau$, and otherwise
-reports the probe as not enrolled. Following~\cite{klare2015ijba}, we score
-open-set performance by the detection and identification rate (DIR), the fraction
-of enrolled probes both correctly ranked first and accepted, measured at a fixed
-false accept rate (FAR) on never-enrolled probes.
+it classifies the face as unknown. Following~\cite{klare2015ijba}, open-set performance is measured using the Detection and Identification Rate (DIR), which is the percentage of people with reference photos in the database who are both correctly identified and accepted.
 
 %==============================================================================
 \section{Experimental Setup}
 %==============================================================================
 
 LFW contains $13{,}233$ photographs of $5{,}749$ individuals from online news
-sources. We use the \texttt{lfw-deepfunneled} variant, already aligned by the
-dataset's congealing procedure, which matters in Section~\ref{sec:detector}. Of its
+sources. We use the \texttt{lfw-deepfunneled} version, where the faces have already been aligned. Of its
 identities $70.8\%$ have exactly one photograph; these can populate the mismatched
-half of the pairs list and serve as open-set impostor probes, but cannot be
+half of the pairs list and serve as open-set unknown probes, but cannot be
 closed-set probes.
 
-\textbf{Avoiding selection bias.} The crop hyperparameters are worth more than
-$30$ accuracy points, so choosing them on the evaluation data would inflate the
-result, and cross-validating $\tau$ gives no protection against that. We partition
-the official pair list into disjoint halves and draw a $600$-pair \emph{tuning}
-split and a $600$-pair \emph{test} split, sharing no pairs, though $99$ individual
-images appear in both because LFW reuses photographs across pairs.
+To avoid selection bias, this project seperates the official LFW pairs into two independent sets: a 600-pair tuning set and a 600-pair test set. The tuning set was used to choose the best crop settings, while the test set was used only for the final evaluation. Although the two sets contain different image pairs, 99 individual images appear in both because some LFW images are reused in multiple pairs.
 
-One caveat is due here. The crop constant was fixed in the codebase during earlier
-development, before this partition existed, using LFW pairs that are not guaranteed
-disjoint from the present test split. We therefore do not claim it was chosen under
-a clean protocol. What Experiment 1 does is \emph{validate} it: it re-runs the whole
-crop family on the tuning split and confirms the shipped window sits within the
-noise floor of the best available configuration. The report describes the
-configuration the released code actually runs, rather than substituting whichever
-window happened to score highest, and the residual optimism from the constant's
-origin is acknowledged in Section~\ref{sec:threats}.
+A limitation of the study is that the crop settings were chosen before the tuning and test sets were created, so they may have been influenced by some of the test data. To reduce this bias, we repeated the crop experiments on the tuning set and confirmed that the chosen crop performed nearly as well as the best possible setting. We kept the original crop settings and acknowledged that a small amount of bias may still remain.
+
 
 We use $600$ of the $3{,}000$ available pairs per half to keep the
-nine-configuration ablation tractable on CPU; this is the direct cause of the wide
-confidence intervals reported throughout, and a full-list evaluation would tighten
-them.
+nine-configuration ablation practical to run on CPU. This caused us to have wider confidence intervals due to fewer image pairs, which translates into the results being less precise. We acknowledge that if all 3,000 pairs were included then it would have produced more precise estimates.
 
-\textbf{Estimators.} Three quantities appear in the literature as ``accuracy.''
-\emph{CV accuracy} cross-validates $\tau$ over ten folds. \emph{Fixed-$\tau$
-accuracy} is the accuracy at one stated threshold. \emph{Best-$\tau$ accuracy} is
-the maximum over a sweep on the same data, and is optimistic. Every accuracy here
-is CV accuracy unless stated. Note that our folds are random partitions of our own
-$600$-pair sample, not LFW's ten predefined identity-disjoint folds; we follow the
-spirit of the protocol, not its letter, and Section~\ref{sec:threats} returns to
-the consequence.
+Three quantities appear in the literature as ``accuracy.'' Cross-validation (CV) accuracy finds the best threshold $\tau$ using ten-fold cross-validation. Fixed-threshold accuracy measures performance using one chosen threshold. Best-threshold accuracy reports the highest accuracy obtained by testing many thresholds on the same data, which can produce optimistic results. Unless otherwise stated, all reported accuracies are CV accuracies. Unlike the original LFW protocol, the authors created random folds from their own 600-pair sample instead of using LFW's predefined identity-disjoint folds.
 
-\textbf{Identification} draws a pool of $300$ multi-photograph identities, enrolled
-with one photograph and probed with a second. For each gallery size $N$ we average
-over $200$ random sub-galleries, so all points are estimated identically; the sole
-exception is $N=300$, where only one gallery exists.
+We selected $300$ people with multiple photos. Each person was represented by one reference photo in the database, while a second photo was used as the probe image. For each database size (N), the results were averaged over $200$ randomly generated databases so that every experiment was evaluated consistently. The only exception was $(N = 300)$, where only one possible database existed.
 
 %==============================================================================
 \section{Results}
 %==============================================================================
 
-\subsection{Preprocessing: placement matters as much as size}
+\subsection{Preprocessing}
 \label{sec:prep}
 
 \begin{table}[!t]
-\caption{Crop ablation, ten-fold CV accuracy on both splits. Selection used the
-         tuning column only. Note that the ranking of the three shifted windows
-         \emph{reverses} across splits, discussed in the text.}
+\caption{Effect of crop size and crop position on ten-fold cross-validation accuracy for the tuning and test datasets.}
 \label{tab:crop}
 \centering
 \begin{tabular}{lcc}
@@ -275,53 +220,21 @@ $110$ px, centred          & 72.0\% & 72.2\% \\
 $96$ px, centred           & 74.8\% & 74.3\% \\
 $92$ px, centred           & 73.7\% & 73.2\% \\
 $96$ px, $18$ px lower     & 87.5\% & 89.7\% \\
-$\mathbf{92}$ \textbf{px,} $\mathbf{18}$ \textbf{px lower (shipped)} & \textbf{88.3\%} & \textbf{89.2\%} \\
+$\mathbf{92}$ \textbf{px,} $\mathbf{18}$ \textbf{px lower} & \textbf{88.3\%} & \textbf{89.2\%} \\
 $88$ px, $18$ px lower     & 88.7\% & 88.8\% \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:crop} separates two effects, both measured on the tuning split so
-the comparison is internally consistent. Shrinking the window from the full frame
-to $96$ pixels gains $17.1$ points, with diminishing returns; the further step to
-$92$ pixels is slightly negative, which is itself within the noise discussed below.
+Table~\ref{tab:crop} shows the effect of two preprocessing changes evaluated on the tuning set. Reducing the crop window from the full image to 96 × 96 pixels improved accuracy by 17.1\%. Making the crop even smaller to 92 × 92 pixels slightly reduced accuracy, which can be allocated to be measurement noise.
 
-The second effect is best read at fixed window size, so that only position varies.
-Displacing the $96$ px window $18$ pixels down gains $12.7$ points, and the $92$ px
-window $14.6$ points. The effect is therefore $+12.7$ to $+14.6$ points regardless
-of which window is used, which is a stronger statement than any single pairing, and
-it means crop \emph{placement} rivals crop size. A size-only search would have
-stopped at $74.8\%$.
+The second preprocessing effect was evaluated while keeping the crop window size fixed so that only its position changed. Moving the crop window 18 pixels downward improved accuracy by 12.7\% for the 96 × 96 window and 14.6\% for the 92 × 92 window. This shows that the position of the crop window has almost as much impact on accuracy as its size. If only the crop size had been optimized, the best accuracy would have been 74.8%.
 
-The explanation is that a centred window on a deep-funnelled LFW image sits over
-the forehead and hairline, whereas the weights were fitted on landmark-aligned
-crops centred nearer the eyes, nose and mouth.
+The explanation is that a centered crop on the deepfunneled LFW images includes more of the forehead and hairline, while the pretrained OpenFace model was trained on crops centered closer to the eyes, nose, and mouth. Shifting the crop downward better matches the data used to train the model. Within the shifted crop windows, changing the crop size had very little effect. This indicates that no crop size was consistently better, whereas moving the crop window 18 pixels downward consistently produced a clear improvement.
 
-\textbf{The size choice within the shifted family is noise.} The three shifted
-windows span only $1.2$ points on the tuning split and $0.9$ on the test split,
-against a fold-to-fold spread of $\pm 3.3$ points, and their ranking is exactly
-reversed between the two: worst-to-best is $96 < 92 < 88$ px on tuning and
-$88 < 92 < 96$ px on test. The window that scores
-highest on tuning ($88$ px) is the worst of the three on held-out data. No
-conclusion about crop size within this family is supportable; only the $18$ px
-downward displacement is a real effect, and it is large enough to be unambiguous.
+The final model uses the $(92 \times 92)$ crop window shifted 18 pixels downward. When evaluated on the held-out test set, the model achieved 89.2\% ± 3.3\% cross-validation accuracy (535/600 pairs), an AUC of 0.97, an EER of 10.0\%, and a threshold of $(\tau = 0.992)$. This is about 4\% lower than OpenFace's reported $(92.92\% \pm 1.34\%)$. The lower performance can be attributed to the lower input data size. 
 
-The pipeline ships the $(92, +18)$ window. Note this is the window whose
-\emph{centred} variant scored worst of the three sizes; once the offset is applied
-the ordering no longer holds, which is the same noise argument made above.
-Evaluated once on the held-out test split it gives $\mathbf{89.2\% \pm 3.3\%}$ CV
-accuracy ($535/600$ pairs, Wilson $95\%$ CI $[86.4\%, 91.4\%]$), AUC $0.97$, EER
-$10.0\%$, at $\tau = 0.992$. This is about $4$ points below OpenFace's reported
-$92.92\% \pm 1.34\%$. We do not claim to have closed that gap: our $\pm 3.3\%$ is a
-fold-to-fold spread over $600$ pairs, not a standard error, and OpenFace's interval
-is over the full $6{,}000$, so the two are not directly comparable. The shortfall
-is consistent with our smaller evaluation and coarser alignment.
-
-A control confirms the crop effect is framing and not resampling: repeating the
-uncropped measurement with nearest-neighbour, bilinear, bicubic, area and Lanczos
-interpolation spans only $56.8\%$ to $59.5\%$, a $2.7$-point range against the
-$\pm 3.3$-point fold spread, so the choice of resampling filter is not
-distinguishable from noise.
+A control experiment confirmed that the improvement came from changing the crop position rather than the image resizing method. We repeated the uncropped experiment using nearest-neighbor, bilinear, bicubic, area, and Lanczos interpolation, and the accuracy ranged from 56.8\% to 59.5\%, a difference of only 2.7\%.
 
 \begin{figure*}[!t]
 \centering
@@ -353,11 +266,7 @@ Threshold $\tau$ & FAR & FRR & Fixed-$\tau$ accuracy \\
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:operating} corrects a common assumption. A threshold of $0.7$,
-frequently inherited from tutorial implementations, is highly conservative here: it
-admits $1.0\%$ of impostors while rejecting $51.7\%$ of genuine pairs. The
-cross-validated optimum sits near the equal error rate. Which point to prefer is a
-policy question, and the choice moves accuracy by more than $15$ points. The full
+Table~\ref{tab:operating} corrects a common assumption. A threshold of 0.7, which is commonly used in tutorial implementations, is too conservative for this dataset. It incorrectly accepts only 1.0\% of unknown people, but rejects 51.7\% of genuine matches. The best threshold found using cross-validation is close to the equal error rate (EER). Choosing the threshold depends on the application's requirements, and different threshold values can change the accuracy by more than 15\%. The full
 operating characteristic is shown in Fig.~\ref{fig:roc}.
 
 \begin{figure}[!t]
@@ -367,22 +276,18 @@ operating characteristic is shown in Fig.~\ref{fig:roc}.
 \label{fig:roc}
 \end{figure}
 
-\subsection{Closed-set identification and an order-statistics model}
+\subsection{Analysis of Closed-Set Identification}
 \label{sec:orderstats}
 
-Verification compares against one template; identification competes against every
-enrolled person, so the deciding quantity is the \emph{minimum} over $N-1$ impostor
-distances. The mean impostor distance is $1.28$ regardless of $N$, yet the expected
-nearest impostor falls from $1.28$ at $N=2$ to $0.70$ at $N=300$
-(Table~\ref{tab:orderstats}). That descending bar is what erodes accuracy.
+Verification compares a face with one reference photo, while identification compares it with all reference photos in the database. As the number of people in the database increases, the chance that an incorrect person has a very similar face also increases, making identification more difficult. Although the average distance to an incorrect person stays at 1.28, the distance to the closest incorrect match decreases from 1.28 at $(N = 2)$ to 0.70 at $(N = 300)$ (Table III). This is why identification accuracy decreases as the database grows.
 
-Let $p_i$ be the probability that a randomly chosen wrong identity is nearer to
-probe $i$ than its own gallery entry. Under independence across distractors,
+Let $p_i$ be the probability that a randomly chosen wrong identity is closer than the correct reference photo. Assuming each incorrect comparison is independent, the per test image prediction is
 
 \begin{equation}
 \hat{r}_{\text{probe}}(N) = \frac{1}{n}\sum_{i=1}^{n} (1-p_i)^{N-1},
 \label{eq:probe}
 \end{equation}
+while the pooled prediction is
 \begin{equation}
 \hat{r}_{\text{pool}}(N) = (1-\bar{p})^{N-1},
 \label{eq:pool}
@@ -392,11 +297,7 @@ where $\bar{p}$ is the mean of $p_i$. The two differ only in whether the average
 precedes or follows exponentiation.
 
 \begin{table}[!t]
-\caption{Order statistics and the two predictive models. Observed values are means
-         over $200$ \emph{randomly resampled} sub-galleries ($N=300$ is a single
-         gallery); ``$\pm$'' is the standard deviation across sub-galleries. These
-         are averages over many galleries, not the accuracy of the one gallery the
-         pipeline enrols, which is reported separately in the text.}
+\caption{Observed closed-set identification accuracy compared with the per-test-image and pooled order-statistics predictions for different database sizes.}
 \label{tab:orderstats}
 \centering
 \begin{tabular}{crrrr}
@@ -415,43 +316,20 @@ $N$ & $\mathbb{E}[\min d_{\text{imp}}]$ & Observed & Eq.~(\ref{eq:probe}) & Eq.~
 \end{tabular}
 \end{table}
 
-\textbf{Two figures, one task.} Table~\ref{tab:orderstats} reports $54.7\%$ at
-$N=150$ while the headline figure is $58.7\%$. These measure different things and
-both are correct. The headline is the accuracy of the $150$-identity gallery the
-released harness enrols, which is the number the code prints. The
-table entry is the mean over $200$ randomly drawn sub-galleries of the same size,
-which is the right estimator for a \emph{curve} because it removes the luck of any
-single draw. The gap of $4.0$ points is close to the $\pm 3.1$ standard deviation
-across those draws, which is itself the point: at this gallery size a single draw
-routinely lands several points either side of the mean.
+Table~\ref{tab:orderstats} reports $54.7\%$ at
+$N=150$ while the headline figure is $58.7\%$.The headline is the accuracy of single database of 150 people, which is the value produced by the released code. The value in Table III is the average accuracy over 200 randomly generated databases of the same size, making it a more reliable estimate because it reduces the effect of any one randomly selected database. The 4.0 percentage point difference is close to the ±3.1 percentage point standard deviation across the 200 databases, showing that a single randomly selected database can easily produce an accuracy several percentages above or below the average.
 
-Eq.~(\ref{eq:probe}) tracks measurement to within $2.8$ points up to $N=150$;
-Eq.~(\ref{eq:pool}) is wrong by a factor of $55$ there and by three orders of
-magnitude at $N=300$.
+Eq.~(\ref{eq:probe}) tracks measurement to within $2.8$\% up to $N=150$;
+Eq.~(\ref{eq:pool}) is wrong by a factor of $55$ and by three orders of
+magnitude for $N=300$.
 
-\textbf{This is a consistency check, not a held-out prediction.} The $p_i$ are
-computed from the same $300 \times 300$ distance matrix whose sub-galleries the
-equations then describe, so Eq.~(\ref{eq:probe}) has no free parameters and no
-unseen data; it is a re-description of that matrix under an independence
-assumption. Its value is therefore not the closeness of the fit but the
-\emph{structure of the residual}, which tests the assumption directly. Two
-observations follow. The binomial standard error at a single $N$ is about $4$
-points at $N=150$, so no individual row carries weight. And the residuals are
-systematic rather than random: Eq.~(\ref{eq:probe}) under-predicts at $N=2$ and
-$N=5$, is exact at $N=10$, and over-predicts from $N=25$ onward with the error
-growing monotonically from $+0.6$ to $+5.2$ points. That is the
-signature of positive dependence among distractors, or
-hubness~\cite{radovanovic2010hubs}, which is precisely the assumption
-Eq.~(\ref{eq:probe}) \emph{violates}. The model is a good first-order account, not
-an exact one, and it errs in the direction its assumption predicts.
+The $p_i$ are computed from the same $300 \times 300$ distance matrix that was used to evaluate the different database sizes.
+As a result Eq.~(\ref{eq:probe}) has no free parameters and no
+unseen data.Instead of focusing on how closely the equation matches the results, we examine the remaining errors to determine whether the assumption that all incorrect comparisons are independent is valid. The standard error for a single database size is about 4\% at (N = 150), so individual results should not be overinterpreted. The errors also followed a clear pattern rather than occurring randomly. Eq. (2) underestimated accuracy at (N = 2) and (N = 5), matched the results at (N = 10), and increasingly overestimated accuracy from (N = 25) onward. This pattern suggests that incorrect comparisons are not completely independent, a phenomenon known as hubness~\cite{radovanovic2010hubs}. Therefore, Eq. (2) provides a good approximation but is not an exact model.
 
-Eq.~(\ref{eq:pool}) fails because $\bar{p}=3.1\%$ describes no actual probe. The
-distribution is bimodal: $140$ of $300$ probes have $p_i$ exactly zero, $111$ fall
-in $(0, 0.05)$ and $49$ exceed $0.05$. The zero-error probes alone contribute
-$46.7$ points of the $54.7$ resampled mean at $N=150$; almost all of the remaining $8.0$
-comes from the thin band with small non-zero $p_i$, since $(1-p_i)^{149}$ has
-already decayed to $e^{-1}$ at $p_i = 1/149$. Averaging $\bar{p}$ destroys exactly
-this structure.
+Eq.~(\ref{eq:pool}) fails because $\bar{p}=3.1\%$ does not accurately represent any individual test image. The
+distribution is bimodal: $140$ of $300$ test images have $p_i$ exactly zero, $111$ fall
+in $(0, 0.05)$ and $49$ exceed $0.05$. At (N = 150), the test images with $p_i = 0$ contributed 46.7\% of the total 54.7\% average accuracy, while most of the remaining accuracy came from the images with very small non-zero $p_i$ values. Averaging these probabilities into a single value $\bar{p}$ removes this important structure, which explains why Eq. (3) gives much less accurate predictions
 
 \begin{figure*}[!t]
 \centering
@@ -465,33 +343,22 @@ this structure.
 \label{fig:ident}
 \end{figure*}
 
-\subsection{Open-set identification is much harder}
+\subsection{Open-Set Identification Performance}
 \label{sec:openset}
 
-Adding $300$ never-enrolled probes changes the picture sharply. On a fixed
-$150$-identity gallery, whose closed-set rank-1 is $58.7\%$, the DIR is $14.7\%$ at
-$1\%$ FAR and $36.0\%$ at $10\%$ FAR. Reaching the closed-set figure requires
-$\tau \approx 0.9$, at which $94.7\%$ of strangers are wrongly accepted. The
-closed-set ceiling quoted here refers to that single fixed gallery, not to the
-$200$-sub-gallery average of Table~\ref{tab:orderstats}.
+Adding 300 people without reference photos in the database greatly reduced performance. For a fixed database of 150 people, the closed-set rank-1 accuracy was 58.7\%, but the Detection and Identification Rate (DIR) dropped to 14.7\% at a 1\% False Accept Rate (FAR) and 36.0\% at a 10\% FAR. Reaching the same 58.7\% closed-set accuracy would require a threshold of approximately $(\tau \approx 0.9)$, but at this threshold 94.7\% of unknown people would be incorrectly accepted. The reported closed-set accuracy refers only to this single fixed database of 150 people, not the average over the 200 randomly generated databases reported in Table ~\ref{tab:orderstats}.
 
-Open-set requires two conditions at once: the correct identity must win the
-$149$-way comparison \emph{and} the winning distance must clear a threshold tight
-enough to exclude strangers. Those requirements pull $\tau$ in opposite directions,
-which is why the operationally relevant number is roughly a quarter of the closed-set
-figure and a sixth of the verification figure.
+Open-set identification is more difficult because two conditions must be met at the same time. First, the correct identity must be the closest match among the 149 other reference photos. Second, the matching distance must also be below a threshold that rejects unknown people. These two requirements work against each other, making open-set identification much more challenging. As a result, the practical open-set performance is much lower than both the closed-set identification and verification performance.
 
-\subsection{Multi-shot enrolment}
+\subsection{Multi-Reference Photos}
 \label{sec:multishot}
+Improving the similarity between a person's reference photos and test image, rather than changing the matching method, should improve identification accuracy. To test this, each person's reference photo was replaced with the normalized average of \(k\) face embeddings, while keeping the database size and test images the same.
 
-The model predicts that reducing genuine distance, rather than altering the
-matching rule, is what should help. We enrolled each identity with the
-$L^2$-renormalised mean of $k$ embeddings, holding gallery size and probe fixed.
+Table~\ref{tab:multishot} confirms this prediction. Averaging multiple reference photos also reduced the distances for incorrect matches, from 0.735 to 0.708, but it reduced the distance for the correct matches by a much larger amount, from 0.743 to 0.627. As a result, the margin changed from (-0.008) to (+0.081). This means the improvement came from more correct test images being identified successfully, rather than all embeddings simply becoming closer together. The method required no changes to the network, threshold, or matching rule. The single-reference-photo baseline was 52.0\% because this experiment used only the 610 people with at least four photos available.
+
 
 \begin{table}[!t]
-\caption{Multi-shot enrolment, $150$ identities with at least four photographs.
-         The impostor bar is reported alongside to show the gain is not a general
-         contraction of distances.}
+\caption{Effect of using multiple reference photos on closed-set identification accuracy and matching distances.}
 \label{tab:multishot}
 \centering
 \begin{tabular}{ccccc}
@@ -505,116 +372,48 @@ $k$ & Rank-1 & Genuine $d$ & $\mathbb{E}[\min d_{\text{imp}}]$ & Margin \\
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:multishot} confirms the prediction and isolates the mechanism.
-Averaging does shrink distances for impostor probes too, so the bar moves, from
-$0.735$ to $0.708$. But the genuine distance falls four times as far, from $0.743$
-to $0.627$, and the margin flips from $-0.008$ to $+0.081$. The gain is therefore
-probes crossing the bar, not a uniform contraction. It requires no change to the
-network, threshold or matching rule. The single-shot baseline is $52.0\%$ rather
-than the pooled figure because this experiment draws from the $610$ identities with
-at least four photographs.
 
 %==============================================================================
 \section{Discussion}
 %==============================================================================
 
-\subsection{What drives failure}
+\subsection{Identification Failure Analysis}
 
-Successful probes match their own second photograph at mean distance $0.58$, below
-the bar; failing probes match at $0.95$, above it. Rank correlates with genuine
-distance at Spearman $\rho = 0.88$. This is partly definitional, since rank counts
-distractors inside the genuine radius, so we decompose it. Local impostor density,
-the mean distance to a probe's five nearest wrong identities, is essentially
-uncorrelated with rank ($\rho = -0.03$, $p = 0.56$), and the partial correlation of
-genuine distance with rank controlling for density is $+0.93$. The impostor cloud
-is therefore close to homogeneous across probes, and rank is governed almost
-entirely by how far a person's own two photographs land apart. Failure is a
-property of the probe, not of an unlucky neighbourhood.
+Successful test images matched their correct reference photo with an average distance of 0.58, which was below the matching threshold, while unsuccessful test images had an average distance of 0.95, which was above the threshold. The rank of the correct identity was strongly correlated with the genuine matching distance, with a Spearman correlation of $(\rho = 0.88)$. The average distance to the five nearest incorrect identities showed almost no correlation with rank $((\rho = -0.03,; p = 0.56))$. After accounting for this, the correlation between genuine distance and rank increased to $(\rho = 0.93)$. This indicates that identification performance mainly depends on how close a test image is to its correct reference photo, not to nearby incorrect identities.
 
 Consistent with this, the correct identity usually remains near the top. Using
 $1$-indexed ranks, the median rank of the true identity is $2$, with top-$5$
 accuracy $71.0\%$ and top-$25$ accuracy $88.7\%$ against rank-$1$ of $46.7\%$ on
 the full $300$-identity pool.
 
-\subsection{A negative result on automatic detection}
+\subsection{Comparison of Fixed Cropping and Face Detection}
 \label{sec:detector}
 
-Because a fixed crop cannot adapt to off-centre faces, we replaced it with
-OpenCV's YuNet CNN detector, cropping to the detected box. The detector fired on
-$100\%$ of images, yet accuracy fell. Under our earlier protocol, a single $600$-pair
-sample and one fixed $150$-identity gallery, the fixed crop gave $87.3\%$
-verification and $58.7\%$ rank-1 against the detector's $85.2\%$ and $42.0\%$.
+Because a fixed crop cannot adjust to faces that are not centered, we replaced it with OpenCV's YuNet face detector, which crops the detected face automatically. The detector successfully detected every image, but performance decreased. Using evaluation mentioned earlier, the fixed crop achieved 87.3\% verification accuracy and 58.7\% rank-1 identification accuracy, while the detector achieved only 85.2\% verification accuracy and 42.0\% rank-1 identification accuracy.
 
-This comparison is weaker than it appears and we flag it as such. The fixed crop
-received a nine-candidate search on a disjoint tuning split, whereas the detector
-box received only a coarse search, on the same pairs it was scored on, over box
-scale and vertical shift. So this is a carefully tuned crop against a casually
-tuned detector, which is exactly the asymmetry this paper criticises elsewhere. We
-therefore offer, rather than establish, the following explanation: the
-\texttt{lfw-deepfunneled} images are already aligned, so a second detector cannot
-remove misalignment that has largely been eliminated, and can only substitute a
-different box convention while adding per-image jitter. That jitter cost
-identification $16.7$ points against verification's $2.1$, an asymmetry consistent
-with Section~\ref{sec:orderstats}. This experiment is not reproducible from the
-submitted artifact, as noted in Section~I.
+It is to be noted that this comparison is not completely fair. The fixed crop was carefully tuned using a separate tuning set, while the detector crop was only roughly tuned using the same data on which it was evaluated. This suggests that because the lfw-deepfunneled images were already aligned, using another face detector could not improve the alignment and instead introduced small variations in the crop position. These variations reduced identification accuracy by 16.7\%, compared with only 2.1\% for verification. It is also to be noted that the results cannot be easily reproduced as mention in Section I.
 
-One incidental observation supports the noise argument of
-Section~\ref{sec:prep}. The fixed crop scores $87.3\%$ under this earlier protocol
-and $89.2\%$ on the test split: the same crop, the same model, differing only in
-which $600$ pairs were drawn, moves $1.9$ points. That is the scale of variation
-against which the $0.9$-point spread among the shifted windows should be judged.
-
-\subsection{Threats to validity}
+\subsection{Limitations}
 \label{sec:threats}
 
-The crop constant predates the tuning/test partition and was originally fixed on
-LFW pairs not guaranteed disjoint from the present test split, so some optimism may
-remain in the headline figure despite the validation of Section~\ref{sec:prep}; the
-two splits also share $99$ images, and the size choice within the shifted family is
-noise-dominated.
-Our ten folds are random partitions of a $600$-pair sample rather than LFW's
-predefined identity-disjoint folds, so the same person can appear in both the
-threshold-fitting and scored folds; this is a mild optimism leak that a strict
-protocol would remove. We evaluate $600$ of $3{,}000$ available pairs per half for
-compute reasons, which is the direct cause of the wide intervals. Verification runs
-on the LFW pair list while identification runs only on multi-photograph identities,
-so differences between tasks are attributable to task \emph{and} probe population,
-not task alone. LFW consists largely of frontal, well-lit press photographs, so
-these figures are an upper bound on unconstrained performance. Finally, we
-performed no demographic subgroup analysis, and aggregate accuracy is known to
-conceal substantial disparities across groups~\cite{buolamwini2018gendershades}.
+This projects faces several limitations. The crop settings were originally chosen before the tuning and test sets were created, so a small amount of bias may still remain even after validation. In addition, the tuning and test sets share 99 images, and differences between the shifted crop sizes are mostly due to measurement noise.
+
+The ten-fold cross-validation used random splits of the 600 image pairs instead of LFW's predefined identity-disjoint folds. This means the same person could appear in both the threshold-selection and evaluation folds, which may slightly overestimate performance. We also evaluated only 600 of the 3,000 available image pairs because of computational limits, resulting in wider confidence intervals.
+
+Finally,  LFW mainly contains well-lit, frontal face images, the reported results are likely better than what would be achieved in more challenging real-world conditions. We also did not perform a demographic analysis, so the reported overall accuracy may hide differences in performance across different groups~\cite{buolamwini2018gendershades}.
 
 %==============================================================================
 \section{Conclusion and Future Work}
 %==============================================================================
 
-On one frozen embedding we measured $89.2\%$ verification, $58.7\%$ closed-set
-rank-1 on a $150$-identity gallery, and $14.7\%$ open-set DIR at $1\%$ FAR. The spread is not a
-defect of the model but a consequence of what each task requires. Closed-set
-identification must beat the nearest of $N-1$ competitors, a bar falling from
-$1.28$ to $0.70$ as the gallery grows from $2$ to $300$, and a per-probe
-order-statistics model reproduces the measured curve to within $2.8$ points while
-erring in the direction its independence assumption predicts. Open-set additionally
-demands that the winning distance clear a threshold tight enough to reject
-strangers, costing a further $44$ points.
+The final model achieved 89.2\% verification accuracy, 58.7\% closed-set rank-1 accuracy on a database of (N = 150) people, and 14.7\% open-set Detection and Identification Rate (DIR) at a 1\% False Accept Rate (FAR). These differences are not due to limitations of the model but to the increasing difficulty of each task. As the database size grows, the closest incorrect match becomes more similar to the test image, making closed-set identification more challenging. Open-set identification is even more difficult because the model must correctly identify the person while also rejecting unknown people, leading to a further decrease in performance.
 
-Preprocessing, not architecture, was the dominant implementation variable, and
-within it the vertical placement of the crop mattered as much as its size, while
-the size itself proved noise-dominated.
+The study also found that preprocessing had a greater impact on performance than changes to the model architecture. In particular, the vertical position of the crop window was as important as its size, while differences between crop sizes were mostly due to measurement noise.
 
-The failure analysis indicates where to go next. Because failure concentrates in
-probes with large genuine distances, and local impostor density is essentially
-irrelevant, anything reducing that distance pays disproportionately. Multi-shot
-enrolment demonstrates this, worth $17.3$ points with the impostor bar barely
-moving and without any architectural change, and landmark-based alignment attacks
-the same quantity by normalising pose. A backbone trained with angular-margin
-losses~\cite{deng2019arcface} would raise the ceiling, but should be expected to
-shift the curve rather than change its shape.
+The failure analysis showed that most identification errors occurred when the distance between a person's test image and reference photo was large. Using multiple reference photos reduced this distance and improved identification accuracy by 17.3\% without changing the model architecture. We also suggest that improved face alignment and newer models trained with angular-margin losses, such as ArcFace, could further improve performance.
 
-Practically, identification results should always be reported with their gallery
-size and with whether they are open or closed set, and verification and
-identification figures should never be quoted interchangeably. A single unqualified
-accuracy number is not a meaningful description of a face recognition system.
+\section{Disclaimer}
+This paper was proofread with the assistance of an AI language tool for grammar and spelling. All ideas, analysis, and conclusions are the authors' own.
 
 \balance
 \begin{thebibliography}{99}
@@ -674,5 +473,6 @@ commercial gender classification,'' in \emph{Proc. Conf. Fairness, Accountabilit
 and Transparency}, 2018, pp.\ 77--91.
 
 \end{thebibliography}
+
 
 \end{document}
