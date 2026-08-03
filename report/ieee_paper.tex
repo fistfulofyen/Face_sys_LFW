@@ -199,6 +199,24 @@ Three quantities appear in the literature as ``accuracy.'' Cross-validation (CV)
 We selected $300$ people with multiple photos. Each person was represented by one reference photo in the database, while a second photo was used as the probe image. For each database size (N), the results were averaged over $200$ randomly generated databases so that every experiment was evaluated consistently. The only exception was $(N = 300)$, where only one possible database existed.
 
 %==============================================================================
+\section{Explanation of the Source Code}
+%==============================================================================
+
+The implementation consists of two modules, one script, and one notebook.
+\texttt{facenet\_arch.py} (280 lines) builds the network from two helper functions,
+one for a convolutional branch and one for a pooling branch, so each Inception
+stage is written as a short list of branches. The \texttt{name} given to each
+weight-bearing layer is functional rather than cosmetic, since those strings are
+the keys used to match a layer to its weight file.
+\texttt{facenet\_utils.py} (523 lines) reads the CSV weight exports and converts
+them from Torch to TensorFlow layout, loads and crops images, builds the identity
+database, and provides the evaluation helpers.
+\texttt{paper\_experiments.py} (392 lines) runs the five reported experiments and
+is seeded, so re-running it reproduces the values given here.
+\texttt{face\_recognition\_pipeline.ipynb} (38 code cells) is a walkthrough version
+for reading, not the source of the reported results.
+
+%==============================================================================
 \section{Results}
 %==============================================================================
 
